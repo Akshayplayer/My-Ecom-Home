@@ -8,11 +8,15 @@
           <!-- <span class="delivery-time">⚡ 10 mins</span> -->
           <div class="location" (click)="showLocationModal = true">
             <span class="location-text">
-              <span *ngIf="!location">📍 Select your location</span>
-              <span *ngIf="location">📍 {{ getLocationDisplayText() }}</span>
+              <span *ngIf="isLoading && isAutoLocationRequest">🔄 Getting your location...</span>
+              <span *ngIf="isLoading && !isAutoLocationRequest">🔄 Getting location...</span>
+              <span *ngIf="!isLoading && !location">📍 Select your location</span>
+              <span *ngIf="!isLoading && location">📍 {{ getLocationDisplayText() }}</span>
             </span>
-            <small *ngIf="!location">Click to set delivery location</small>
-            <small *ngIf="location">Current location set</small>
+            <small *ngIf="isLoading && isAutoLocationRequest">Automatically detecting your location</small>
+            <small *ngIf="isLoading && !isAutoLocationRequest">Getting your location...</small>
+            <small *ngIf="!isLoading && !location">Click to set delivery location</small>
+            <small *ngIf="!isLoading && location">Current location set</small>
           </div>
         </div>
       </div>
@@ -26,6 +30,20 @@
       
       <div class="header-actions">
         <button class="contact-btn" (click)="showContactModal = true">📞 Order via Call</button>
+        
+        <!-- Authentication Section -->
+        <div class="auth-section" *ngIf="!isLoggedIn">
+          <button class="login-btn" (click)="openAuthModal()">Login</button>
+          <button class="signup-btn" (click)="openAuthModal()">Sign Up</button>
+        </div>
+        
+        <div class="user-section" *ngIf="isLoggedIn">
+          <div class="user-info">
+            <span class="user-greeting">👋 Hi, {{ getUserDisplayName() }}</span>
+            <button class="logout-btn" (click)="logout()">Logout</button>
+          </div>
+        </div>
+        
         <a href="#" class="cart-icon">
           🛒
           <span class="cart-count">{{ cartCount }}</span>
@@ -39,10 +57,10 @@
 <section class="hero-banner">
   <div class="container">
     <div class="banner-content">
-      <h1>Groceries & Essentials 
+      <h1>Besan and Rai
         <!-- in <span class="highlight">10 minutes</span>  -->
       </h1>
-      <p>Fresh vegetables, fruits, medicines, electronics & more delivered instantly</p>
+      <p>Premium Besans with different packagings and qualities.</p>
       <div class="hero-features">
         <!-- <div class="feature">⚡ 10-min delivery</div> -->
         <!-- <div class="feature">🆓 Free delivery</div> -->
@@ -183,7 +201,7 @@
     </div>
     <div class="modal-content">
       <div class="location-options">
-        <div class="location-option" (click)="requestLocation()">
+        <div class="location-option" (click)="requestLocationManually()">
           <div class="option-icon">📍</div>
           <div class="option-content">
             <h4>Use Current Location</h4>
@@ -215,11 +233,18 @@
       <div *ngIf="errorMessage" class="location-error">
         <h4>❌ Location Error</h4>
         <p>{{ errorMessage }}</p>
-        <button class="retry-btn" (click)="requestLocation()">Try Again</button>
+        <button class="retry-btn" (click)="requestLocationManually()">Try Again</button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Authentication Modal -->
+<app-auth-modal 
+  *ngIf="showAuthModal"
+  (closeModal)="closeAuthModal()"
+  (authSuccess)="onAuthSuccess()"
+></app-auth-modal>
 
 <!-- Footer -->
 <footer class="footer">

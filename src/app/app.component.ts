@@ -1,28 +1,58 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { LocationService } from './service/location.service';
+import { AuthService, User } from './service/auth.service';
+import { AuthModalComponent } from './components/auth-modal/auth-modal.component';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AuthModalComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
-  providers: [LocationService]
+  providers: [LocationService, AuthService]
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   currentYear = new Date().getFullYear();
   cartCount = 3;
   showContactModal = false;
   showLocationModal = false;
+  showAuthModal = false;
   location : GeolocationPosition | null = null;
   errorMessage : string | null = null;
   isLoading = false;
   confirmedLocation : string = '';
+  isAutoLocationRequest = false;
+  currentUser: User | null = null;
+  isLoggedIn = false;
   
-  constructor(private locationService: LocationService) {}
+  constructor(
+    private locationService: LocationService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+    // Automatically request location when the component initializes
+    this.isAutoLocationRequest = true;
+    this.requestLocation();
+    
+    // Subscribe to authentication state
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+    });
+    
+    this.authService.isLoggedIn$.subscribe(isLoggedIn => {
+      this.isLoggedIn = isLoggedIn;
+    });
+  }
 
   // Method to be called by a button click
+  public requestLocationManually(): void {
+    this.isAutoLocationRequest = false;
+    this.requestLocation();
+  }
+
+  // Method to be called by a button click or automatically on page load
   public requestLocation(): void {
     this.isLoading = true;
     this.errorMessage = null;
@@ -33,6 +63,7 @@ export class AppComponent {
         this.location = position;
         this.errorMessage = null;
         this.isLoading = false;
+        this.isAutoLocationRequest = false;
         console.log('Latitude:', position.coords.latitude);
         console.log('Longitude:', position.coords.longitude);
         console.log('Accuracy:', position.coords.accuracy, 'meters');
@@ -41,10 +72,13 @@ export class AppComponent {
       error: (error) => {
         this.location = null;
         this.isLoading = false;
+        this.isAutoLocationRequest = false;
         
         switch (error.code) {
           case 1:
-            this.errorMessage = "Permission denied. Please enable location access in your browser settings and try again.";
+            this.errorMessage = this.isAutoLocationRequest 
+              ? "Location access denied. Please click the location button to manually set your location."
+              : "Permission denied. Please enable location access in your browser settings and try again.";
             break;
           case 2:
             this.errorMessage = "Location unavailable. Please check your internet connection and try again.";
@@ -53,7 +87,9 @@ export class AppComponent {
             this.errorMessage = "Location request timed out. Please try again.";
             break;
           default:
-            this.errorMessage = "Could not get location. Please ensure location services are enabled and try again.";
+            this.errorMessage = this.isAutoLocationRequest
+              ? "Could not get your location automatically. Please click the location button to set it manually."
+              : "Could not get location. Please ensure location services are enabled and try again.";
         }
         console.error('Error getting location:', error);
       }
@@ -214,6 +250,29 @@ export class AppComponent {
     console.log('Quick order submitted');
     alert('Your order has been received! We will call you shortly.');
     this.showContactModal = false;
+  }
+
+  // Authentication methods
+  openAuthModal(): void {
+    this.showAuthModal = true;
+  }
+
+  closeAuthModal(): void {
+    this.showAuthModal = false;
+  }
+
+  onAuthSuccess(): void {
+    this.showAuthModal = false;
+    console.log('Authentication successful!');
+  }
+
+  logout(): void {
+    this.authService.logout();
+    console.log('User logged out');
+  }
+
+  getUserDisplayName(): string {
+    return this.currentUser ? this.currentUser.name : 'User';
   }
 }
 

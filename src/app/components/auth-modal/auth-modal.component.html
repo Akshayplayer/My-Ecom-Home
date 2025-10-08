@@ -1,0 +1,18 @@
+<div class="modal-overlay" (click)="onBackdropClick($event)">
+  <div class="auth-modal" (click)="$event.stopPropagation()">
+    <app-login 
+      *ngIf="currentView === 'login'"
+      (switchToSignup)="onSwitchToSignup()"
+      (loginSuccess)="onAuthSuccess()"
+      (closeModal)="onClose()"
+    ></app-login>
+    
+    <app-signup 
+      *ngIf="currentView === 'signup'"
+      (switchToLogin)="onSwitchToLogin()"
+      (signupSuccess)="onAuthSuccess()"
+      (closeModal)="onClose()"
+    ></app-signup>
+  </div>
+</div>
+
